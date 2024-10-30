@@ -63,18 +63,18 @@ if joystick_use:
 
     def handle_joystick_input():
         global exit_flag, x_vel_cmd, y_vel_cmd, yaw_vel_cmd, head_vel_cmd
-        
-        
+
+
         while not exit_flag:
             # get joystick input
-            pygame.event.get()
+            #pygame.event.get()
             # update robot command
-            x_vel_cmd = -joystick.get_axis(1) * 1
-            y_vel_cmd = -joystick.get_axis(0) * 1
-            yaw_vel_cmd = -joystick.get_axis(3) * 1
+            x_vel_cmd = 1.0 #-joystick.get_axis(1) * 1
+            y_vel_cmd = 0 #-joystick.get_axis(0) * 1
+            yaw_vel_cmd = 0 #-joystick.get_axis(3) * 1
             pygame.time.delay(100)
 
-    if joystick_opened and joystick_use:
+    if True: #joystick_opened and joystick_use:
         joystick_thread = Thread(target=handle_joystick_input)
         joystick_thread.start()
 
@@ -86,22 +86,22 @@ class cmd:
 def quaternion_to_euler_array(quat):
     # Ensure quaternion is in the correct format [x, y, z, w]
     x, y, z, w = quat
-    
+
     # Roll (x-axis rotation)
     t0 = +2.0 * (w * x + y * z)
     t1 = +1.0 - 2.0 * (x * x + y * y)
     roll_x = np.arctan2(t0, t1)
-    
+
     # Pitch (y-axis rotation)
     t2 = +2.0 * (w * y - z * x)
     t2 = np.clip(t2, -1.0, 1.0)
     pitch_y = np.arcsin(t2)
-    
+
     # Yaw (z-axis rotation)
     t3 = +2.0 * (w * z + x * y)
     t4 = +1.0 - 2.0 * (y * y + z * z)
     yaw_z = np.arctan2(t3, t4)
-    
+
     # Returns roll, pitch, yaw in a NumPy array in radians
     return np.array([roll_x, pitch_y, yaw_z])
 
@@ -121,7 +121,7 @@ def get_obs(data,model):
         body_name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, i)
         if '5_link' or 'ankle_roll' in body_name:  # according to model name
             foot_positions.append(data.xpos[i][2].copy().astype(np.double))
-            foot_forces.append(data.cfrc_ext[i][2].copy().astype(np.double)) 
+            foot_forces.append(data.cfrc_ext[i][2].copy().astype(np.double))
         if 'base_link' or 'waist_link' in body_name:  # according to model name
             base_pos = data.xpos[i][:3].copy().astype(np.double)
     return (q, dq, quat, v, omega, gvec, base_pos, foot_positions, foot_forces)
@@ -166,7 +166,7 @@ def run_mujoco(policy, cfg, env_cfg):
 
     count_lowlevel = 1
     logger = Logger(cfg.sim_config.dt)
-    
+
     stop_state_log = 40000
 
     np.set_printoptions(formatter={'float': '{:0.4f}'.format})
@@ -176,7 +176,7 @@ def run_mujoco(policy, cfg, env_cfg):
         q, dq, quat, v, omega, gvec, base_pos, foot_positions, foot_forces = get_obs(data,model)
         q = q[-env_cfg.env.num_actions:]
         dq = dq[-env_cfg.env.num_actions:]
-        
+
         base_z = base_pos[2]
         foot_z = foot_positions
         foot_force_z = foot_forces
@@ -187,7 +187,7 @@ def run_mujoco(policy, cfg, env_cfg):
                 vel_norm = np.sqrt(x_vel_cmd**2 + y_vel_cmd**2 + yaw_vel_cmd**2)
                 if env_cfg.commands.sw_switch and vel_norm <= env_cfg.commands.stand_com_threshold:
                     count_lowlevel = 0
-                    
+
             obs = np.zeros([1, env_cfg.env.num_single_obs], dtype=np.float32)
             eu_ang = quaternion_to_euler_array(quat)
             eu_ang[eu_ang > math.pi] -= 2 * math.pi
@@ -207,13 +207,13 @@ def run_mujoco(policy, cfg, env_cfg):
             obs[0, env_cfg.env.num_commands+2*env_cfg.env.num_actions:env_cfg.env.num_commands+3*env_cfg.env.num_actions] = action
             obs[0, env_cfg.env.num_commands+3*env_cfg.env.num_actions:env_cfg.env.num_commands+3*env_cfg.env.num_actions+3] = omega
             obs[0, env_cfg.env.num_commands+3*env_cfg.env.num_actions+3:env_cfg.env.num_commands+3*env_cfg.env.num_actions+6] = eu_ang
-            
+
             ####### for stand only #######
             if env_cfg.env.add_stand_bool:
                 vel_norm = np.sqrt(x_vel_cmd**2 + y_vel_cmd**2 + yaw_vel_cmd**2)
                 stand_command = (vel_norm <= env_cfg.commands.stand_com_threshold)
                 obs[0, -1] = stand_command
-            
+
             print(x_vel_cmd, y_vel_cmd, yaw_vel_cmd)
 
             obs = np.clip(obs, -env_cfg.normalization.clip_observations, env_cfg.normalization.clip_observations)
@@ -224,7 +224,7 @@ def run_mujoco(policy, cfg, env_cfg):
             policy_input = np.zeros([1, env_cfg.env.num_observations], dtype=np.float32)
             for i in range(env_cfg.env.frame_stack):
                 policy_input[0, i * env_cfg.env.num_single_obs : (i + 1) * env_cfg.env.num_single_obs] = hist_obs[i][0, :]
-            
+
             action[:] = policy(torch.tensor(policy_input))[0].detach().numpy()
             action = np.clip(action, -env_cfg.normalization.clip_actions, env_cfg.normalization.clip_actions)
             target_q = action * env_cfg.control.action_scale
@@ -234,7 +234,7 @@ def run_mujoco(policy, cfg, env_cfg):
         tau = pd_control(target_q, q, cfg.robot_config.kps,
                         target_dq, dq, cfg.robot_config.kds, cfg)  # Calc torques
         tau = np.clip(tau, -cfg.robot_config.tau_limit, cfg.robot_config.tau_limit)  # Clamp torques
-        
+
         data.ctrl = tau
         applied_tau = data.actuator_force
 
@@ -281,7 +281,7 @@ def run_mujoco(policy, cfg, env_cfg):
             for i in range(env_cfg.env.num_actions):
                 dict[f'dof_vel[{i}]'] = dq[i].item()
             logger.log_states(dict=dict)
-        
+
         elif _== stop_state_log:
             logger.plot_states()
 
@@ -331,4 +331,3 @@ if __name__ == '__main__':
 
     run_mujoco(policy, Sim2simCfg(), env_cfg)
 
-    

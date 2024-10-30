@@ -67,8 +67,8 @@ if joystick_use:
 
     def handle_joystick_input():
         global exit_flag, x_vel_cmd, y_vel_cmd, yaw_vel_cmd, head_vel_cmd
-        
-        
+
+
         while not exit_flag:
             # get joystick input
             pygame.event.get()
@@ -93,15 +93,15 @@ def play(args):
     env_cfg.terrain.max_init_terrain_level = 5
     env_cfg.env.episode_length_s = 1000
     env_cfg.noise.add_noise = False
-    env_cfg.domain_rand.randomize_friction = False 
-    env_cfg.domain_rand.push_robots = False 
-    env_cfg.domain_rand.continuous_push = False 
-    env_cfg.domain_rand.randomize_base_mass = False 
-    env_cfg.domain_rand.randomize_com = False 
-    env_cfg.domain_rand.randomize_gains = False 
-    env_cfg.domain_rand.randomize_torque = False 
-    env_cfg.domain_rand.randomize_link_mass = False 
-    env_cfg.domain_rand.randomize_motor_offset = False 
+    env_cfg.domain_rand.randomize_friction = False
+    env_cfg.domain_rand.push_robots = False
+    env_cfg.domain_rand.continuous_push = False
+    env_cfg.domain_rand.randomize_base_mass = False
+    env_cfg.domain_rand.randomize_com = False
+    env_cfg.domain_rand.randomize_gains = False
+    env_cfg.domain_rand.randomize_torque = False
+    env_cfg.domain_rand.randomize_link_mass = False
+    env_cfg.domain_rand.randomize_motor_offset = False
     env_cfg.domain_rand.randomize_joint_friction = False
     env_cfg.domain_rand.randomize_joint_damping = False
     env_cfg.domain_rand.randomize_joint_armature = False
@@ -120,7 +120,7 @@ def play(args):
     train_cfg.runner.resume = True
     ppo_runner, train_cfg, _ = task_registry.make_alg_runner(env=env, name=args.task, args=args, train_cfg=train_cfg)
     policy = ppo_runner.get_inference_policy(device=env.device)
-    
+
     # export policy as a jit module (used to run it from C++)
     current_date_str = datetime.now().strftime('%Y-%m-%d')
     current_time_str = datetime.now().strftime('%H-%M-%S')
@@ -157,26 +157,26 @@ def play(args):
         if not os.path.exists(experiment_dir):
             os.makedirs(experiment_dir,exist_ok=True)
         video = cv2.VideoWriter(dir, fourcc, 50.0, (1920, 1080))
-    
+
     obs = env.get_observations()
 
     np.set_printoptions(formatter={'float': '{:0.4f}'.format})
     for i in range(10*stop_state_log):
-        
+
         actions = policy(obs.detach()) # * 0.
-        
+
         if FIX_COMMAND:
-            env.commands[:, 0] = 0.5   # 1.0
+            env.commands[:, 0] = 1.0   # 1.0
             env.commands[:, 1] = 0
             env.commands[:, 2] = 0
             env.commands[:, 3] = 0.
-            
+
         else:
             env.commands[:, 0] = x_vel_cmd
             env.commands[:, 1] = y_vel_cmd
             env.commands[:, 2] = yaw_vel_cmd
             env.commands[:, 3] = 0.
-        
+
         obs, critic_obs, rews, dones, infos = env.step(actions.detach())
 
         if RENDER:
@@ -227,7 +227,7 @@ def play(args):
                 dict[f'dof_vel[{i}]'] = env.dof_vel[robot_index, i].item(),
 
             logger.log_states(dict=dict)
-        
+
         elif _== stop_state_log:
             logger.plot_states()
         elif i == stop_state_log:
@@ -245,6 +245,6 @@ def play(args):
 if __name__ == '__main__':
     EXPORT_POLICY = False
     RENDER = False
-    FIX_COMMAND = False
+    FIX_COMMAND = True
     args = get_args()
     play(args)
