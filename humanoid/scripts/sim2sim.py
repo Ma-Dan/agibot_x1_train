@@ -45,38 +45,45 @@ from humanoid.utils.helpers import get_load_path
 import os
 import time
 
-x_vel_cmd, y_vel_cmd, yaw_vel_cmd = 0.0, 0.0, 0.0
-joystick_use = True
-joystick_opened = False
+import uvicorn
+from fastapi import FastAPI
 
-if joystick_use:
-    pygame.init()
-    try:
-        # get joystick
-        joystick = pygame.joystick.Joystick(0)
-        joystick.init()
-        joystick_opened = True
-    except Exception as e:
-        print(f"无法打开手柄：{e}")
-    # joystick thread exit flag
-    exit_flag = False
+app = FastAPI()
 
-    def handle_joystick_input():
-        global exit_flag, x_vel_cmd, y_vel_cmd, yaw_vel_cmd, head_vel_cmd
+from multiprocessing.managers import SyncManager
+from typing import Any, Dict, Optional, Union
+from UltraDict import UltraDict
 
+class Meta:
+    def __init__(self, **kwargs: Dict[Any, Any]):
+        self.ultradict = UltraDict(name='fastapi_dict')
+        self.ultradict.update(**kwargs)
 
-        while not exit_flag:
-            # get joystick input
-            #pygame.event.get()
-            # update robot command
-            x_vel_cmd = 1.0 #-joystick.get_axis(1) * 1
-            y_vel_cmd = 0 #-joystick.get_axis(0) * 1
-            yaw_vel_cmd = 0 #-joystick.get_axis(3) * 1
-            pygame.time.delay(100)
+    def set(self, key: str, value):
+        self.ultradict.update([(key, value)])
 
-    if True: #joystick_opened and joystick_use:
-        joystick_thread = Thread(target=handle_joystick_input)
-        joystick_thread.start()
+    def get(self, item: Union[str, int]):
+        return self.ultradict.get(item)
+
+meta = Meta(x_vel_cmd=0.0, y_vel_cmd=0.0, yaw_vel_cmd=0.0)
+
+from pydantic import BaseModel
+
+class JoystickValue(BaseModel):
+    axis_0: float
+    axis_1: float
+    axis_3: float
+
+@app.post("/joystick")
+async def joystick(v: JoystickValue):
+    meta.set('x_vel_cmd', v.axis_1)
+    meta.set('y_vel_cmd', v.axis_0)
+    meta.set('yaw_vel_cmd', v.axis_3)
+    return {"message": "success"}
+
+def joystick_server():
+    uvicorn.run(app='sim2sim:app', host="0.0.0.0", workers=1, port=8001)
+
 
 class cmd:
     vx = 0.0
@@ -172,6 +179,8 @@ def run_mujoco(policy, cfg, env_cfg):
     np.set_printoptions(formatter={'float': '{:0.4f}'.format})
 
     for _ in range(int(cfg.sim_config.sim_duration / cfg.sim_config.dt)):
+        x_vel_cmd, y_vel_cmd, yaw_vel_cmd = meta.get('x_vel_cmd'), meta.get('y_vel_cmd'), meta.get('yaw_vel_cmd')
+
         # Obtain an observation
         q, dq, quat, v, omega, gvec, base_pos, foot_positions, foot_forces = get_obs(data,model)
         q = q[-env_cfg.env.num_actions:]
@@ -328,6 +337,9 @@ if __name__ == '__main__':
     model_path = os.path.join(model_path,jit_name[-1])
     policy = torch.jit.load(model_path)
     print("Load model from:", model_path)
+
+    joystick_thread = Thread(target=joystick_server)
+    joystick_thread.start()
 
     run_mujoco(policy, Sim2simCfg(), env_cfg)
 
