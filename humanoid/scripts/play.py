@@ -45,42 +45,45 @@ from isaacgym.torch_utils import *
 import torch
 from datetime import datetime
 
-import pygame
 from threading import Thread
+import uvicorn
+from fastapi import FastAPI
 
+app = FastAPI()
 
-x_vel_cmd, y_vel_cmd, yaw_vel_cmd = 0.0, 0.0, 0.0
-joystick_use = True
-joystick_opened = False
+from multiprocessing.managers import SyncManager
+from typing import Any, Dict, Optional, Union
+from UltraDict import UltraDict
 
-if joystick_use:
-    pygame.init()
-    try:
-        # get joystick
-        joystick = pygame.joystick.Joystick(0)
-        joystick.init()
-        joystick_opened = True
-    except Exception as e:
-        print(f"无法打开手柄：{e}")
-    # joystick thread exit flag
-    exit_flag = False
+class Meta:
+    def __init__(self, **kwargs: Dict[Any, Any]):
+        self.ultradict = UltraDict(name='fastapi_dict')
+        self.ultradict.update(**kwargs)
 
-    def handle_joystick_input():
-        global exit_flag, x_vel_cmd, y_vel_cmd, yaw_vel_cmd, head_vel_cmd
+    def set(self, key: str, value):
+        self.ultradict.update([(key, value)])
 
+    def get(self, item: Union[str, int]):
+        return self.ultradict.get(item)
 
-        while not exit_flag:
-            # get joystick input
-            pygame.event.get()
-            # update robot command
-            x_vel_cmd = -joystick.get_axis(1) * 1
-            y_vel_cmd = -joystick.get_axis(0) * 1
-            yaw_vel_cmd = -joystick.get_axis(3) * 1
-            pygame.time.delay(100)
+meta = Meta(x_vel_cmd=0.0, y_vel_cmd=0.0, yaw_vel_cmd=0.0)
 
-    if joystick_opened and joystick_use:
-        joystick_thread = Thread(target=handle_joystick_input)
-        joystick_thread.start()
+from pydantic import BaseModel
+
+class JoystickValue(BaseModel):
+    axis_0: float
+    axis_1: float
+    axis_3: float
+
+@app.post("/joystick")
+async def joystick(v: JoystickValue):
+    meta.set('x_vel_cmd', v.axis_1)
+    meta.set('y_vel_cmd', v.axis_0)
+    meta.set('yaw_vel_cmd', v.axis_3)
+    return {"message": "success"}
+
+def joystick_server():
+    uvicorn.run(app='sim2sim:app', host="0.0.0.0", workers=1, port=8001)
 
 def play(args):
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
@@ -166,12 +169,13 @@ def play(args):
         actions = policy(obs.detach()) # * 0.
 
         if FIX_COMMAND:
-            env.commands[:, 0] = 1.0   # 1.0
+            env.commands[:, 0] = 0.5   # 1.0
             env.commands[:, 1] = 0
             env.commands[:, 2] = 0
             env.commands[:, 3] = 0.
 
         else:
+            x_vel_cmd, y_vel_cmd, yaw_vel_cmd = meta.get('x_vel_cmd'), meta.get('y_vel_cmd'), meta.get('yaw_vel_cmd')
             env.commands[:, 0] = x_vel_cmd
             env.commands[:, 1] = y_vel_cmd
             env.commands[:, 2] = yaw_vel_cmd
@@ -245,6 +249,10 @@ def play(args):
 if __name__ == '__main__':
     EXPORT_POLICY = False
     RENDER = False
-    FIX_COMMAND = True
+    FIX_COMMAND = False
+
+    joystick_thread = Thread(target=joystick_server)
+    joystick_thread.start()
+
     args = get_args()
     play(args)
