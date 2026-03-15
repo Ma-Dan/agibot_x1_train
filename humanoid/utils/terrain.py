@@ -35,7 +35,7 @@ import numpy as np
 from numpy.random import choice
 from scipy import interpolate
 
-from isaacgym import terrain_utils
+#from isaacgym import terrain_utils
 from humanoid.envs.base.legged_robot_config import LeggedRobotCfg
 
 class Terrain:
@@ -74,21 +74,21 @@ class Terrain:
         self.height_field_raw = np.zeros((self.tot_rows , self.tot_cols), dtype=np.int16)
         self.terrain_type = np.zeros((cfg.num_rows, cfg.num_cols))
         self.idx = 0
-        
+
         if cfg.curriculum:
             self.curiculum()
         elif cfg.selected:
             self.selected_terrain()
-        else:    
-            self.randomized_terrain()  
-              
+        else:
+            self.randomized_terrain()
+
         self.heightsamples = self.height_field_raw
         if self.type=="trimesh":
             self.vertices, self.triangles = terrain_utils.convert_heightfield_to_trimesh(   self.height_field_raw,
                                                                                             self.cfg.horizontal_scale,
                                                                                             self.cfg.vertical_scale,
                                                                                             self.cfg.slope_treshold)
-    
+
     def randomized_terrain(self):
         for k in range(self.cfg.num_sub_terrains):
             # Env coordinates in the world
@@ -99,7 +99,7 @@ class Terrain:
             terrain = self.make_terrain(choice, difficulty)
             # i j select row col position in whole terrain
             self.add_terrain_to_map(terrain, i, j)
-        
+
     def curiculum(self):
         for j in range(self.cfg.num_cols):
             for i in range(self.cfg.num_rows):
@@ -123,7 +123,7 @@ class Terrain:
 
             eval(terrain_type)(terrain, **self.cfg.terrain_kwargs.terrain_kwargs)
             self.add_terrain_to_map(terrain, i, j)
-    
+
     # choice select terrain type, difficulty select row, row increase difficulty increase
     def make_terrain(self, choice, difficulty):
         terrain = terrain_utils.SubTerrain(   "terrain",
@@ -148,70 +148,70 @@ class Terrain:
             return terrain
         elif choice < self.proportions[1]:
             idx = 2
-            terrain_utils.random_uniform_terrain(terrain, 
-                                                 min_height=rought_flat_min_height, 
-                                                 max_height=rought_flat_max_height, 
-                                                 step=0.005, 
+            terrain_utils.random_uniform_terrain(terrain,
+                                                 min_height=rought_flat_min_height,
+                                                 max_height=rought_flat_max_height,
+                                                 step=0.005,
                                                  downsampled_scale=0.2)
         elif choice < self.proportions[3]:
             idx = 4
             if choice < self.proportions[2]:
                 idx = 3
                 slope *= -1
-            terrain_utils.pyramid_sloped_terrain(terrain, 
-                                                 slope=slope, 
+            terrain_utils.pyramid_sloped_terrain(terrain,
+                                                 slope=slope,
                                                  platform_size=self.platform)
-            terrain_utils.random_uniform_terrain(terrain, 
-                                                 min_height=rought_slope_min_height, 
+            terrain_utils.random_uniform_terrain(terrain,
+                                                 min_height=rought_slope_min_height,
                                                  max_height=rought_slope_max_height,
-                                                 step=0.005, 
+                                                 step=0.005,
                                                  downsampled_scale=0.2)
         elif choice < self.proportions[5]:
             idx = 6
             if choice < self.proportions[4]:
                 idx = 5
                 slope *= -1
-            terrain_utils.pyramid_sloped_terrain(terrain, 
-                                                 slope=slope, 
+            terrain_utils.pyramid_sloped_terrain(terrain,
+                                                 slope=slope,
                                                  platform_size=self.platform)
         elif choice < self.proportions[7]:
             idx = 8
             if choice<self.proportions[6]:
                 idx = 7
                 stair_height *= -1
-            terrain_utils.pyramid_stairs_terrain(terrain, 
-                                                 step_width=stair_width, 
-                                                 step_height=stair_height, 
+            terrain_utils.pyramid_stairs_terrain(terrain,
+                                                 step_width=stair_width,
+                                                 step_height=stair_height,
                                                  platform_size=self.platform)
         elif choice < self.proportions[8]:
             idx = 9
             num_rectangles = 20
             rectangle_min_size = 1.
             rectangle_max_size = 2.
-            terrain_utils.discrete_obstacles_terrain(terrain, 
-                                                     discrete_obstacles_height, 
-                                                     rectangle_min_size, 
-                                                     rectangle_max_size, 
-                                                     num_rectangles, 
+            terrain_utils.discrete_obstacles_terrain(terrain,
+                                                     discrete_obstacles_height,
+                                                     rectangle_min_size,
+                                                     rectangle_max_size,
+                                                     num_rectangles,
                                                      platform_size=self.platform)
         elif choice < self.proportions[9]:
             idx = 10
-            terrain_utils.wave_terrain(terrain, 
-                                       num_waves=3, 
+            terrain_utils.wave_terrain(terrain,
+                                       num_waves=3,
                                        amplitude=amplitude)
         elif choice < self.proportions[10]:
             idx = 11
-            gap_terrain(terrain, 
-                        gap_size=gap_size, 
+            gap_terrain(terrain,
+                        gap_size=gap_size,
                         platform_size=self.platform)
         else:
             idx = 12
-            pit_terrain(terrain, 
-                        depth=pit_depth, 
+            pit_terrain(terrain,
+                        depth=pit_depth,
                         platform_size=self.platform)
         self.idx = idx
         return terrain
-    
+
     # row col select position in whole terrain
     def add_terrain_to_map(self, terrain, row, col):
         i = row
@@ -243,7 +243,7 @@ def gap_terrain(terrain, gap_size, platform_size=1.):
     x2 = x1 + gap_size
     y1 = (terrain.width - platform_size) // 2
     y2 = y1 + gap_size
-   
+
     terrain.height_field_raw[center_x-x2 : center_x + x2, center_y-y2 : center_y + y2] = -1000
     terrain.height_field_raw[center_x-x1 : center_x + x1, center_y-y1 : center_y + y1] = 0
 

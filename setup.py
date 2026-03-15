@@ -41,7 +41,7 @@ setup(
     packages=find_packages(),
     author_email='developer@zhiyuan-robot.com',
     description='Isaac Gym environments for Legged Robots',
-    install_requires=['isaacgym',  # preview4
+    install_requires=[#'isaacgym',  # preview4
                       'tensorboard',
                       'numpy==1.23.5',
                       'opencv-python',

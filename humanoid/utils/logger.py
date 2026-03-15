@@ -61,6 +61,7 @@ class Logger:
         self.rew_log.clear()
 
     def plot_states(self):
+        return
         self.plot_process = Process(target=self._plot)
         self.plot_process1 = Process(target=self._plot_position)
         # self.plot_process2 = Process(target=self._plot_torque)
@@ -173,7 +174,7 @@ class Logger:
         a.set(xlabel='time [s]', ylabel='Position [rad]', title='DOF Position[5]')
         a.legend()
         plt.show()
-        
+
     def _plot_position1(self):
         nb_rows = 2
         nb_cols = 3
@@ -289,7 +290,7 @@ class Logger:
         a.set(xlabel='time [s]', ylabel='Joint Torque [Nm]', title='Torque[11]')
         a.legend()
         plt.show()
-        
+
     def _plot_vel(self):
         nb_rows = 2
         nb_cols = 3
@@ -384,7 +385,7 @@ class Logger:
         if log["dof_torque[0]"] != [] and log["dof_vel[0]"] != []:
             vel_array = np.array(log["dof_vel[0]"])
             torque_array = np.array(log["dof_torque[0]"])
-            
+
             rms_vel = np.sqrt(np.mean(vel_array**2))
             rms_torque = np.sqrt(np.mean(torque_array**2))
             a.plot(rms_vel, rms_torque, '*', label='measured')
@@ -395,7 +396,7 @@ class Logger:
         if log["dof_torque[1]"] != [] and log["dof_vel[1]"] != []:
             vel_array = np.array(log["dof_vel[1]"])
             torque_array = np.array(log["dof_torque[1]"])
-            
+
             rms_vel = np.sqrt(np.mean(vel_array**2))
             rms_torque = np.sqrt(np.mean(torque_array**2))
             a.plot(rms_vel, rms_torque, '*', label='measured')
@@ -405,7 +406,7 @@ class Logger:
         if log["dof_torque[1]"] != [] and log["dof_vel[1]"] != []:
             vel_array = np.array(log["dof_vel[1]"])
             torque_array = np.array(log["dof_torque[1]"])
-            
+
             rms_vel = np.sqrt(np.mean(vel_array**2))
             rms_torque = np.sqrt(np.mean(torque_array**2))
             a.plot(rms_vel, rms_torque, '*', label='measured')
@@ -415,7 +416,7 @@ class Logger:
         if log["dof_torque[3]"] != [] and log["dof_vel[3]"] != []:
             vel_array = np.array(log["dof_vel[3]"])
             torque_array = np.array(log["dof_torque[3]"])
-            
+
             rms_vel = np.sqrt(np.mean(vel_array**2))
             rms_torque = np.sqrt(np.mean(torque_array**2))
             a.plot(rms_vel, rms_torque, '*', label='measured')
@@ -425,7 +426,7 @@ class Logger:
         if log["dof_torque[4]"] != [] and log["dof_vel[4]"] != []:
             vel_array = np.array(log["dof_vel[4]"])
             torque_array = np.array(log["dof_torque[4]"])
-            
+
             rms_vel = np.sqrt(np.mean(vel_array**2))
             rms_torque = np.sqrt(np.mean(torque_array**2))
             a.plot(rms_vel, rms_torque, '*', label='measured')
@@ -435,7 +436,7 @@ class Logger:
         if log["dof_torque[5]"] != [] and log["dof_vel[5]"] != []:
             vel_array = np.array(log["dof_vel[5]"])
             torque_array = np.array(log["dof_torque[5]"])
-            
+
             rms_vel = np.sqrt(np.mean(vel_array**2))
             rms_torque = np.sqrt(np.mean(torque_array**2))
             a.plot(rms_vel, rms_torque, '*', label='measured')
@@ -455,7 +456,7 @@ class Logger:
         if log["dof_torque[6]"] != [] and log["dof_vel[6]"] != []:
             vel_array = np.array(log["dof_vel[6]"])
             torque_array = np.array(log["dof_torque[6]"])
-            
+
             rms_vel = np.sqrt(np.mean(vel_array**2))
             rms_torque = np.sqrt(np.mean(torque_array**2))
             a.plot(rms_vel, rms_torque, '*', label='measured')
@@ -465,7 +466,7 @@ class Logger:
         if log["dof_torque[7]"] != [] and log["dof_vel[7]"] != []:
             vel_array = np.array(log["dof_vel[7]"])
             torque_array = np.array(log["dof_torque[7]"])
-            
+
             rms_vel = np.sqrt(np.mean(vel_array**2))
             rms_torque = np.sqrt(np.mean(torque_array**2))
             a.plot(rms_vel, rms_torque, '*', label='measured')
@@ -475,7 +476,7 @@ class Logger:
         if log["dof_torque[8]"] != [] and log["dof_vel[8]"] != []:
             vel_array = np.array(log["dof_vel[8]"])
             torque_array = np.array(log["dof_torque[8]"])
-            
+
             rms_vel = np.sqrt(np.mean(vel_array**2))
             rms_torque = np.sqrt(np.mean(torque_array**2))
             a.plot(rms_vel, rms_torque, '*', label='measured')
@@ -485,7 +486,7 @@ class Logger:
         if log["dof_torque[9]"] != [] and log["dof_vel[9]"] != []:
             vel_array = np.array(log["dof_vel[9]"])
             torque_array = np.array(log["dof_torque[9]"])
-            
+
             rms_vel = np.sqrt(np.mean(vel_array**2))
             rms_torque = np.sqrt(np.mean(torque_array**2))
             a.plot(rms_vel, rms_torque, '*', label='measured')
@@ -495,7 +496,7 @@ class Logger:
         if log["dof_torque[10]"] != [] and log["dof_vel[10]"] != []:
             vel_array = np.array(log["dof_vel[10]"])
             torque_array = np.array(log["dof_torque[10]"])
-            
+
             rms_vel = np.sqrt(np.mean(vel_array**2))
             rms_torque = np.sqrt(np.mean(torque_array**2))
             a.plot(rms_vel, rms_torque, '*', label='measured')
@@ -505,7 +506,7 @@ class Logger:
         if log["dof_torque[11]"] != [] and log["dof_vel[11]"] != []:
             vel_array = np.array(log["dof_vel[11]"])
             torque_array = np.array(log["dof_torque[11]"])
-            
+
             rms_vel = np.sqrt(np.mean(vel_array**2))
             rms_torque = np.sqrt(np.mean(torque_array**2))
             a.plot(rms_vel, rms_torque, '*', label='measured')
@@ -525,7 +526,7 @@ class Logger:
         if log["dof_torque[0]"] != [] and log["dof_vel[0]"] != []:
             vel_array = np.array(log["dof_vel[0]"])
             torque_array = np.array(log["dof_torque[0]"])
-            
+
             abs_vel = np.abs(vel_array)
             abs_torque = np.abs(torque_array)
             a.plot(abs_vel, abs_torque, '*', label='measured')
@@ -536,7 +537,7 @@ class Logger:
         if log["dof_torque[1]"] != [] and log["dof_vel[1]"] != []:
             vel_array = np.array(log["dof_vel[1]"])
             torque_array = np.array(log["dof_torque[1]"])
-            
+
             abs_vel = np.abs(vel_array)
             abs_torque = np.abs(torque_array)
             a.plot(abs_vel, abs_torque, '*', label='measured')
@@ -546,7 +547,7 @@ class Logger:
         if log["dof_torque[1]"] != [] and log["dof_vel[1]"] != []:
             vel_array = np.array(log["dof_vel[1]"])
             torque_array = np.array(log["dof_torque[1]"])
-            
+
             abs_vel = np.abs(vel_array)
             abs_torque = np.abs(torque_array)
             a.plot(abs_vel, abs_torque, '*', label='measured')
@@ -556,7 +557,7 @@ class Logger:
         if log["dof_torque[3]"] != [] and log["dof_vel[3]"] != []:
             vel_array = np.array(log["dof_vel[3]"])
             torque_array = np.array(log["dof_torque[3]"])
-            
+
             abs_vel = np.abs(vel_array)
             abs_torque = np.abs(torque_array)
             a.plot(abs_vel, abs_torque, '*', label='measured')
@@ -566,7 +567,7 @@ class Logger:
         if log["dof_torque[4]"] != [] and log["dof_vel[4]"] != []:
             vel_array = np.array(log["dof_vel[4]"])
             torque_array = np.array(log["dof_torque[4]"])
-            
+
             abs_vel = np.abs(vel_array)
             abs_torque = np.abs(torque_array)
             a.plot(abs_vel, abs_torque, '*', label='measured')
@@ -576,7 +577,7 @@ class Logger:
         if log["dof_torque[5]"] != [] and log["dof_vel[5]"] != []:
             vel_array = np.array(log["dof_vel[5]"])
             torque_array = np.array(log["dof_torque[5]"])
-            
+
             abs_vel = np.abs(vel_array)
             abs_torque = np.abs(torque_array)
             a.plot(abs_vel, abs_torque, '*', label='measured')
@@ -596,7 +597,7 @@ class Logger:
         if log["dof_torque[6]"] != [] and log["dof_vel[6]"] != []:
             vel_array = np.array(log["dof_vel[6]"])
             torque_array = np.array(log["dof_torque[6]"])
-            
+
             abs_vel = np.abs(vel_array)
             abs_torque = np.abs(torque_array)
             a.plot(abs_vel, abs_torque, '*', label='measured')
@@ -606,7 +607,7 @@ class Logger:
         if log["dof_torque[7]"] != [] and log["dof_vel[7]"] != []:
             vel_array = np.array(log["dof_vel[7]"])
             torque_array = np.array(log["dof_torque[7]"])
-            
+
             abs_vel = np.abs(vel_array)
             abs_torque = np.abs(torque_array)
             a.plot(abs_vel, abs_torque, '*', label='measured')
@@ -616,7 +617,7 @@ class Logger:
         if log["dof_torque[8]"] != [] and log["dof_vel[8]"] != []:
             vel_array = np.array(log["dof_vel[8]"])
             torque_array = np.array(log["dof_torque[8]"])
-            
+
             abs_vel = np.abs(vel_array)
             abs_torque = np.abs(torque_array)
             a.plot(abs_vel, abs_torque, '*', label='measured')
@@ -626,7 +627,7 @@ class Logger:
         if log["dof_torque[9]"] != [] and log["dof_vel[9]"] != []:
             vel_array = np.array(log["dof_vel[9]"])
             torque_array = np.array(log["dof_torque[9]"])
-            
+
             abs_vel = np.abs(vel_array)
             abs_torque = np.abs(torque_array)
             a.plot(abs_vel, abs_torque, '*', label='measured')
@@ -636,7 +637,7 @@ class Logger:
         if log["dof_torque[10]"] != [] and log["dof_vel[10]"] != []:
             vel_array = np.array(log["dof_vel[10]"])
             torque_array = np.array(log["dof_torque[10]"])
-            
+
             abs_vel = np.abs(vel_array)
             abs_torque = np.abs(torque_array)
             a.plot(abs_vel, abs_torque, '*', label='measured')
@@ -646,7 +647,7 @@ class Logger:
         if log["dof_torque[11]"] != [] and log["dof_vel[11]"] != []:
             vel_array = np.array(log["dof_vel[11]"])
             torque_array = np.array(log["dof_torque[11]"])
-            
+
             abs_vel = np.abs(vel_array)
             abs_torque = np.abs(torque_array)
             a.plot(abs_vel, abs_torque, '*', label='measured')
@@ -743,7 +744,7 @@ class Logger:
             mean = np.sum(np.array(values)) / self.num_episodes
             print(f" - {key}: {mean}")
         print(f"Total number of episodes: {self.num_episodes}")
-    
+
     def __del__(self):
         if self.plot_process is not None:
             self.plot_process.kill()

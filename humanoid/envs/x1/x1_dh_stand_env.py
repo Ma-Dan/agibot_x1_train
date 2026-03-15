@@ -32,8 +32,8 @@
 
 from humanoid.envs.base.legged_robot_config import LeggedRobotCfg
 
-from isaacgym.torch_utils import *
-from isaacgym import gymtorch, gymapi
+#from isaacgym.torch_utils import *
+#from isaacgym import gymtorch, gymapi
 from humanoid.utils.math import wrap_to_pi
 
 
@@ -114,11 +114,11 @@ class X1DHStandEnv(LeggedRobot):
         super().__init__(cfg, sim_params, physics_engine, sim_device, headless)
         self.last_feet_z = self.cfg.rewards.feet_to_ankle_distance
         self.feet_height = torch.zeros((self.num_envs, 2), device=self.device)
-        self.ref_dof_pos = torch.zeros((self.num_envs, self.num_actions), device=self.device)      
+        self.ref_dof_pos = torch.zeros((self.num_envs, self.num_actions), device=self.device)
 
 
     def _push_robots(self):
-        """ Random pushes the robots. Emulates an impulse by setting a randomized base velocity. 
+        """ Random pushes the robots. Emulates an impulse by setting a randomized base velocity.
         """
         max_vel = self.cfg.domain_rand.max_push_vel_xy
         max_push_angular = self.cfg.domain_rand.max_push_ang_vel
@@ -150,7 +150,7 @@ class X1DHStandEnv(LeggedRobot):
         # return float mask 1 is stance, 0 is swing
         phase = self._get_phase()
         sin_pos = torch.sin(2 * torch.pi * phase)
-        
+
         stance_mask = torch.zeros((self.num_envs, 2), device=self.device)
         # left foot stance
         stance_mask[:, 0] = sin_pos >= 0
@@ -159,14 +159,14 @@ class X1DHStandEnv(LeggedRobot):
         # Add double support phase
         stance_mask[torch.abs(sin_pos) < 0.1] = 1
 
-        # stand mask == 1 means stand leg 
+        # stand mask == 1 means stand leg
         return stance_mask
 
     def generate_gait_time(self,envs):
         if len(envs) == 0:
             return
 
-        # rand sample 
+        # rand sample
         random_tensor_list = []
         for i in range(len(self.cfg.commands.gait)):
             name = self.cfg.commands.gait[i]
@@ -186,7 +186,7 @@ class X1DHStandEnv(LeggedRobot):
         # self.gait_time = |__gait1__|__gait2__|__gait3__|
         # self.gait_time triger resample gait command
         self.gait_time[envs] = torch.cumsum(scaled_tensor,dim=1).int()
-     
+
     def _resample_commands(self):
         """ Randommly select commands of some environments
 
@@ -211,7 +211,7 @@ class X1DHStandEnv(LeggedRobot):
             self.commands[env_ids, 3] = torch.zeros(len(env_ids), device=self.device)
         else:
             self.commands[env_ids, 2] = torch.zeros(len(env_ids), device=self.device)
-            
+
     def _resample_walk_sagittal_command(self, env_ids):
         self.commands[env_ids, 0] = torch_rand_float(self.command_ranges["lin_vel_x"][0], self.command_ranges["lin_vel_x"][1], (len(env_ids), 1), device=self.device).squeeze(1)
         self.commands[env_ids, 1] = torch.zeros(len(env_ids), device=self.device)
@@ -227,7 +227,7 @@ class X1DHStandEnv(LeggedRobot):
             self.commands[env_ids, 3] = torch.zeros(len(env_ids), device=self.device)
         else:
             self.commands[env_ids, 2] = torch.zeros(len(env_ids), device=self.device)
-    
+
     def _resample_rotate_command(self, env_ids):
         self.commands[env_ids, 0] = torch.zeros(len(env_ids), device=self.device)
         self.commands[env_ids, 1] = torch.zeros(len(env_ids), device=self.device)
@@ -244,7 +244,7 @@ class X1DHStandEnv(LeggedRobot):
         else:
             self.commands[env_ids, 2] = torch_rand_float(self.command_ranges["ang_vel_yaw"][0], self.command_ranges["ang_vel_yaw"][1], (len(env_ids), 1), device=self.device).squeeze(1)
         # self.commands[env_ids, :2] *= (torch.norm(self.commands[env_ids, :2], dim=1) > 0.05).unsqueeze(1)
-        
+
     def _post_physics_step_callback(self):
         """ Callback called before computing terminations, rewards, and observations
             Default behaviour: Compute ang vel command based on target and heading, compute measured terrain heights and randomly push robots
@@ -296,10 +296,10 @@ class X1DHStandEnv(LeggedRobot):
         self.ref_dof_pos[:, 11] = sin_pos_r * self.cfg.rewards.final_swing_joint_delta_pos[11]
 
         self.ref_dof_pos[torch.abs(sin_pos) < 0.1] = 0.
-        
+
         # if use_ref_actions=True, action += ref_action
         self.ref_action = 2 * self.ref_dof_pos
-        
+
         # self.ref_dof_pos set ref dof pos for swing leg, ref_dof_pos=0 for stance leg
         self.ref_dof_pos += self.default_dof_pos
 
@@ -368,7 +368,7 @@ class X1DHStandEnv(LeggedRobot):
 
         self.command_input = torch.cat(
             (sin_pos, cos_pos, self.commands[:, :3] * self.commands_scale), dim=1)
-        
+
         # critic no lag
         diff = self.dof_pos - self.ref_dof_pos
         # 73
@@ -388,29 +388,29 @@ class X1DHStandEnv(LeggedRobot):
             stance_mask,  # 2
             contact_mask,  # 2
         ), dim=-1)
-        
+
         # random add dof_pos and dof_vel same lag
         if self.cfg.domain_rand.add_dof_lag:
             if self.cfg.domain_rand.randomize_dof_lag_timesteps_perstep:
-                self.dof_lag_timestep = torch.randint(self.cfg.domain_rand.dof_lag_timesteps_range[0], 
+                self.dof_lag_timestep = torch.randint(self.cfg.domain_rand.dof_lag_timesteps_range[0],
                                                   self.cfg.domain_rand.dof_lag_timesteps_range[1]+1,(self.num_envs,),device=self.device)
                 cond = self.dof_lag_timestep > self.last_dof_lag_timestep + 1
                 self.dof_lag_timestep[cond] = self.last_dof_lag_timestep[cond] + 1
                 self.last_dof_lag_timestep = self.dof_lag_timestep.clone()
             self.lagged_dof_pos = self.dof_lag_buffer[torch.arange(self.num_envs), :self.num_actions, self.dof_lag_timestep.long()]
-            self.lagged_dof_vel = self.dof_lag_buffer[torch.arange(self.num_envs), -self.num_actions:, self.dof_lag_timestep.long()]  
+            self.lagged_dof_vel = self.dof_lag_buffer[torch.arange(self.num_envs), -self.num_actions:, self.dof_lag_timestep.long()]
         # random add dof_pos and dof_vel different lag
         elif self.cfg.domain_rand.add_dof_pos_vel_lag:
             if self.cfg.domain_rand.randomize_dof_pos_lag_timesteps_perstep:
-                self.dof_pos_lag_timestep = torch.randint(self.cfg.domain_rand.dof_pos_lag_timesteps_range[0], 
+                self.dof_pos_lag_timestep = torch.randint(self.cfg.domain_rand.dof_pos_lag_timesteps_range[0],
                                                   self.cfg.domain_rand.dof_pos_lag_timesteps_range[1]+1,(self.num_envs,),device=self.device)
                 cond = self.dof_pos_lag_timestep > self.last_dof_pos_lag_timestep + 1
                 self.dof_pos_lag_timestep[cond] = self.last_dof_pos_lag_timestep[cond] + 1
                 self.last_dof_pos_lag_timestep = self.dof_pos_lag_timestep.clone()
             self.lagged_dof_pos = self.dof_pos_lag_buffer[torch.arange(self.num_envs), :, self.dof_pos_lag_timestep.long()]
-                
+
             if self.cfg.domain_rand.randomize_dof_vel_lag_timesteps_perstep:
-                self.dof_vel_lag_timestep = torch.randint(self.cfg.domain_rand.dof_vel_lag_timesteps_range[0], 
+                self.dof_vel_lag_timestep = torch.randint(self.cfg.domain_rand.dof_vel_lag_timesteps_range[0],
                                                   self.cfg.domain_rand.dof_vel_lag_timesteps_range[1]+1,(self.num_envs,),device=self.device)
                 cond = self.dof_vel_lag_timestep > self.last_dof_vel_lag_timestep + 1
                 self.dof_vel_lag_timestep[cond] = self.last_dof_vel_lag_timestep[cond] + 1
@@ -422,9 +422,9 @@ class X1DHStandEnv(LeggedRobot):
             self.lagged_dof_vel = self.dof_vel
 
         # imu lag, including rpy and omega
-        if self.cfg.domain_rand.add_imu_lag:    
+        if self.cfg.domain_rand.add_imu_lag:
             if self.cfg.domain_rand.randomize_imu_lag_timesteps_perstep:
-                self.imu_lag_timestep = torch.randint(self.cfg.domain_rand.imu_lag_timesteps_range[0], 
+                self.imu_lag_timestep = torch.randint(self.cfg.domain_rand.imu_lag_timesteps_range[0],
                                                   self.cfg.domain_rand.imu_lag_timesteps_range[1]+1,(self.num_envs,),device=self.device)
                 cond = self.imu_lag_timestep > self.last_imu_lag_timestep + 1
                 self.imu_lag_timestep[cond] = self.last_imu_lag_timestep[cond] + 1
@@ -433,13 +433,13 @@ class X1DHStandEnv(LeggedRobot):
             self.lagged_base_ang_vel = self.lagged_imu[:,:3].clone()
             self.lagged_base_euler_xyz = self.lagged_imu[:,-3:].clone()
         # no imu lag
-        else:              
+        else:
             self.lagged_base_ang_vel = self.base_ang_vel[:,:3]
             self.lagged_base_euler_xyz = self.base_euler_xyz[:,-3:]
-        
+
         # obs q and dq
         q = (self.lagged_dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos
-        dq = self.lagged_dof_vel * self.obs_scales.dof_vel  
+        dq = self.lagged_dof_vel * self.obs_scales.dof_vel
 
         # 47
         obs_buf = torch.cat((
@@ -454,12 +454,12 @@ class X1DHStandEnv(LeggedRobot):
         if self.cfg.env.num_single_obs == 48:
             stand_command = (torch.norm(self.commands[:, :3], dim=1, keepdim=True) <= self.cfg.commands.stand_com_threshold)
             obs_buf = torch.cat((obs_buf, stand_command),dim=1)
-            
+
         if self.cfg.terrain.measure_heights:
             heights = torch.clip(self.root_states[:, 2].unsqueeze(1) - 0.5 - self.measured_heights, -1, 1.) * self.obs_scales.height_measurements
             privileged_obs_buf = torch.cat((privileged_obs_buf.clone(), heights), dim=-1)
-        
-        if self.add_noise:  
+
+        if self.add_noise:
             # add obs noise
             obs_now = obs_buf.clone() + (2 * torch.rand_like(obs_buf) -1) * self.noise_scale_vec * self.cfg.noise.noise_level
         else:
@@ -492,18 +492,18 @@ class X1DHStandEnv(LeggedRobot):
         # avoid updating command curriculum at each step since the maximum command is common to all envs
         if self.cfg.commands.curriculum and (self.common_step_counter % self.max_episode_length==0):
             self.update_command_curriculum(env_ids)
-        
+
         # reset rand dof_pos and dof_vel=0
         self._reset_dofs(env_ids)
 
         # reset base position
         self._reset_root_states(env_ids)
-        
+
         # Randomize joint parameters, like torque gain friction ...
         self.randomize_dof_props(env_ids)
         self._refresh_actor_dof_props(env_ids)
         self.randomize_lag_props(env_ids)
-        
+
         # reset buffers
         self.last_last_actions[env_ids] = 0.
         self.actions[env_ids] = 0.
@@ -517,11 +517,11 @@ class X1DHStandEnv(LeggedRobot):
         self.reset_buf[env_ids] = 1
         # rand 0 or 0.5
         self.gait_start[env_ids] = torch.randint(0, 2, (len(env_ids),)).to(self.device)*0.5
-        
+
         #resample command
         self.generate_gait_time(env_ids)
         self._resample_commands()
-        
+
         # fill extras
         self.extras["episode"] = {}
         for key in self.episode_sums.keys():
@@ -535,12 +535,12 @@ class X1DHStandEnv(LeggedRobot):
         # send timeout info to the algorithm
         if self.cfg.env.send_timeouts:
             self.extras["time_outs"] = self.time_out_buf
-            
+
         # fix reset gravity bug
         self.gym.refresh_actor_root_state_tensor(self.sim)
         self.gym.refresh_net_contact_force_tensor(self.sim)
         self.gym.refresh_rigid_body_state_tensor(self.sim)
-        
+
         self.base_quat[env_ids] = self.root_states[env_ids, 3:7]
         self.base_euler_xyz = get_euler_xyz_tensor(self.base_quat)
         self.projected_gravity[env_ids] = quat_rotate_inverse(self.base_quat[env_ids], self.gravity_vec[env_ids])
@@ -548,14 +548,14 @@ class X1DHStandEnv(LeggedRobot):
         self.base_ang_vel[env_ids] = quat_rotate_inverse(self.base_quat[env_ids], self.root_states[env_ids, 10:13])
         self.feet_quat = self.rigid_state[:, self.feet_indices, 3:7]
         self.feet_euler_xyz = get_euler_xyz_tensor(self.feet_quat)
-        
+
         # clear obs history buffer and privileged obs buffer
         for i in range(self.obs_history.maxlen):
             self.obs_history[i][env_ids] *= 0
         for i in range(self.critic_history.maxlen):
             self.critic_history[i][env_ids] *= 0
-        
-    
+
+
     def _init_buffers(self):
         """ Initialize torch tensors which will contain simulation states and processed quantities
         """
@@ -578,7 +578,7 @@ class X1DHStandEnv(LeggedRobot):
         r = torch.exp(-2 * torch.norm(diff, dim=1)) - 0.2 * torch.norm(diff, dim=1).clamp(0, 0.5)
         r[stand_command] = 1.0
         return r
-    
+
     def _reward_feet_distance(self):
         """
         Calculates the reward based on the distance between the feet. Penilize feet get close to each other or too far away.
@@ -605,8 +605,8 @@ class X1DHStandEnv(LeggedRobot):
 
     def _reward_foot_slip(self):
         """
-        Calculates the reward for minimizing foot slip. The reward is based on the contact forces 
-        and the speed of the feet. A contact threshold is used to determine if the foot is in contact 
+        Calculates the reward for minimizing foot slip. The reward is based on the contact forces
+        and the speed of the feet. A contact threshold is used to determine if the foot is in contact
         with the ground. The speed of the foot is calculated and scaled by the contact conditions.
         """
         contact = self.contact_forces[:, self.feet_indices, 2] > 5.
@@ -634,7 +634,7 @@ class X1DHStandEnv(LeggedRobot):
 
     def _reward_feet_contact_number(self):
         """
-        Calculates a reward based on the number of feet contacts aligning with the gait phase. 
+        Calculates a reward based on the number of feet contacts aligning with the gait phase.
         Rewards or penalizes depending on whether the foot contact matches the expected gait phase.
         """
         contact = self.contact_forces[:, self.feet_indices, 2] > 5.
@@ -645,7 +645,7 @@ class X1DHStandEnv(LeggedRobot):
 
     def _reward_orientation(self):
         """
-        Calculates the reward for maintaining a flat base orientation. It penalizes deviation 
+        Calculates the reward for maintaining a flat base orientation. It penalizes deviation
         from the desired base orientation using the base euler angles and the projected gravity vector.
         """
         quat_mismatch = torch.exp(-torch.sum(torch.abs(self.base_euler_xyz[:, :2]), dim=1) * 10)
@@ -661,7 +661,7 @@ class X1DHStandEnv(LeggedRobot):
 
     def _reward_default_joint_pos(self):
         """
-        Calculates the reward for keeping joint positions close to default positions, with a focus 
+        Calculates the reward for keeping joint positions close to default positions, with a focus
         on penalizing deviation in yaw and roll directions. Excludes yaw and roll from the main penalty.
         """
         joint_diff = self.dof_pos - self.default_joint_pd_target
@@ -674,7 +674,7 @@ class X1DHStandEnv(LeggedRobot):
     def _reward_base_height(self):
         """
         Calculates the reward based on the robot's base height. Penalizes deviation from a target base height.
-        The reward is computed based on the height difference between the robot's base and the average height 
+        The reward is computed based on the height difference between the robot's base and the average height
         of its feet when they are in contact with the ground.
         """
         stance_mask = self._get_stance_mask()
@@ -695,7 +695,7 @@ class X1DHStandEnv(LeggedRobot):
 
     def _reward_vel_mismatch_exp(self):
         """
-        Computes a reward based on the mismatch in the robot's linear and angular velocities. 
+        Computes a reward based on the mismatch in the robot's linear and angular velocities.
         Encourages the robot to maintain a stable velocity by penalizing large deviations.
         """
         lin_mismatch = torch.exp(-torch.square(self.base_lin_vel[:, 2]) * 10)
@@ -723,10 +723,10 @@ class X1DHStandEnv(LeggedRobot):
         linear_error = 0.2 * (lin_vel_error + ang_vel_error)
         r = (lin_vel_error_exp + ang_vel_error_exp) / 2. - linear_error
         return r
-    
+
     def _reward_tracking_lin_vel(self):
         """
-        Tracks linear velocity commands along the xy axes. 
+        Tracks linear velocity commands along the xy axes.
         Calculates a reward based on how closely the robot's linear velocity matches the commanded values.
         """
         stand_command = (torch.norm(self.commands[:, :3], dim=1) <= self.cfg.commands.stand_com_threshold)
@@ -744,7 +744,7 @@ class X1DHStandEnv(LeggedRobot):
         """
         Tracks angular velocity commands for yaw rotation.
         Computes a reward based on how closely the robot's angular velocity matches the commanded yaw values.
-        """   
+        """
         stand_command = (torch.norm(self.commands[:, :3], dim=1) <= self.cfg.commands.stand_com_threshold)
         ang_vel_error_square = torch.square(
             self.commands[:, 2] - self.base_ang_vel[:, 2])
@@ -754,8 +754,8 @@ class X1DHStandEnv(LeggedRobot):
         r_abs = torch.exp(-ang_vel_error_abs * self.cfg.rewards.tracking_sigma * 2)
         r = torch.where(stand_command, r_abs, r_square)
 
-        return r 
-    
+        return r
+
     def _reward_feet_clearance(self):
         """
         Calculates reward based on the clearance of the swing leg from the ground during movement.
@@ -781,8 +781,8 @@ class X1DHStandEnv(LeggedRobot):
 
     def _reward_low_speed(self):
         """
-        Rewards or penalizes the robot based on its speed relative to the commanded speed. 
-        This function checks if the robot is moving too slow, too fast, or at the desired speed, 
+        Rewards or penalizes the robot based on its speed relative to the commanded speed.
+        This function checks if the robot is moving too slow, too fast, or at the desired speed,
         and if the movement direction matches the command.
         """
         # Calculate the absolute value of speed and command for comparison
@@ -811,14 +811,14 @@ class X1DHStandEnv(LeggedRobot):
         # Sign mismatch has the highest priority
         reward[sign_mismatch] = -2.0
         return reward * (self.commands[:, 0].abs() > 0.05)
-    
+
     def _reward_torques(self):
         """
         Penalizes the use of high torques in the robot's joints. Encourages efficient movement by minimizing
         the necessary force exerted by the motors.
         """
         return torch.sum(torch.square(self.torques), dim=1)
-    
+
     def _reward_ankle_torques(self):
         """
         Penalizes the use of high torques in the robot's joints. Encourages efficient movement by minimizing
@@ -826,7 +826,7 @@ class X1DHStandEnv(LeggedRobot):
         """
         ankle_idx = [4,5,10,11]
         return torch.sum(torch.square(self.torques[:,ankle_idx]), dim=1)
-    
+
     def _reward_feet_rotation(self):
         feet_euler_xyz = self.feet_euler_xyz
         rotation = torch.sum(torch.square(feet_euler_xyz[:,:,:2]),dim=[1,2])
@@ -836,25 +836,25 @@ class X1DHStandEnv(LeggedRobot):
 
     def _reward_dof_vel(self):
         """
-        Penalizes high velocities at the degrees of freedom (DOF) of the robot. This encourages smoother and 
+        Penalizes high velocities at the degrees of freedom (DOF) of the robot. This encourages smoother and
         more controlled movements.
         """
         return torch.sum(torch.square(self.dof_vel), dim=1)
-    
+
     def _reward_dof_acc(self):
         """
         Penalizes high accelerations at the robot's degrees of freedom (DOF). This is important for ensuring
         smooth and stable motion, reducing wear on the robot's mechanical parts.
         """
         return torch.sum(torch.square((self.last_dof_vel - self.dof_vel) / self.dt), dim=1)
-    
+
     def _reward_collision(self):
         """
         Penalizes collisions of the robot with the environment, specifically focusing on selected body parts.
         This encourages the robot to avoid undesired contact with objects or surfaces.
         """
         return torch.sum(1.*(torch.norm(self.contact_forces[:, self.penalised_contact_indices, :], dim=-1) > 0.1), dim=1)
-    
+
     def _reward_action_smoothness(self):
         """
         Encourages smoothness in the robot's actions by penalizing large differences between consecutive actions.
@@ -866,11 +866,11 @@ class X1DHStandEnv(LeggedRobot):
             self.actions + self.last_last_actions - 2 * self.last_actions), dim=1)
         term_3 = 0.05 * torch.sum(torch.abs(self.actions), dim=1)
         return term_1 + term_2 + term_3
-    
+
     def _reward_termination(self):
         # Terminal reward / penalty
         return self.reset_buf * ~self.time_out_buf
-    
+
     def _reward_stand_still(self):
         # penalize motion at zero commands
         stand_command = (torch.norm(self.commands[:, :3], dim=1) <= self.cfg.commands.stand_com_threshold)
@@ -878,7 +878,7 @@ class X1DHStandEnv(LeggedRobot):
         r = torch.where(stand_command, r.clone(),
                         torch.zeros_like(r))
         return r
-    
+
     def _reward_feet_stumble(self):
         # Penalize feet hitting vertical surfaces
         return torch.any(torch.norm(self.contact_forces[:, self.feet_indices, :2], dim=2) >\
